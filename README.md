@@ -1,5 +1,5 @@
 - 👋 Hi, I’m @Abdurrahman-101
-- 👀 I’m interested in User Experience and Marketing
+- 👀 I’m interested in User Experience design and Marketing
 - 🌱 I’m currently learning BS AND CS
 - 💞️ I’m looking to collaborate on Projects
 - 📫 How to reach me email - abdurrahman.ahamed101@gmail.com
