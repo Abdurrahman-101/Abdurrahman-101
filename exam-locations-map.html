@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sri Lanka Exam Locations Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #f7f7f7;
+      color: #1f2937;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .page {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      gap: 12px;
+    }
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 700;
+    }
+    #map {
+      width: 100%;
+      height: 70vh;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+    .leaflet-tooltip {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    footer {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Sri Lanka Exam Locations</h1>
+    </header>
+
+    <div id="map" aria-label="Map of Sri Lanka with exam locations"></div>
+
+    <footer>
+      Hover a pin to see the location name. Click to pin/unpin popup.
+    </footer>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    // Center roughly on Sri Lanka
+    const map = L.map('map', { scrollWheelZoom: true }).setView([7.8731, 80.7718], 7);
+
+    // OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Keep map within Sri Lanka bounds (with a small padding)
+    const sriLankaBounds = L.latLngBounds([5.8, 79.5], [9.9, 82.1]);
+    map.setMaxBounds(sriLankaBounds.pad(0.1));
+
+    // Exam locations
+    const locations = [
+      { name: 'Ambalangoda', lat: 6.2358, lng: 80.0531 },
+      { name: 'Anuradhapura', lat: 8.3114, lng: 80.4037 },
+      { name: 'Badulla', lat: 6.9934, lng: 81.0550 },
+      { name: 'Bandaragama', lat: 6.7129, lng: 79.9893 },
+      { name: 'Bandarawela', lat: 6.8297, lng: 80.9982 },
+      { name: 'Colombo', lat: 6.9271, lng: 79.8612 },
+      { name: 'Galle', lat: 6.0535, lng: 80.2200 },
+      { name: 'Gampaha', lat: 7.0882, lng: 79.9958 },
+      { name: 'Horana', lat: 6.7189, lng: 80.0620 },
+      { name: 'Kandy', lat: 7.2906, lng: 80.6337 },
+      { name: 'Kegalle', lat: 7.2523, lng: 80.3450 },
+      { name: 'Kiribathgoda', lat: 6.9780, lng: 79.9220 },
+      { name: 'Kuliyapitiya', lat: 7.4675, lng: 80.0447 },
+      { name: 'Kurunegala', lat: 7.4863, lng: 80.3623 },
+      { name: 'Matara', lat: 5.9549, lng: 80.5549 },
+      { name: 'Moratuwa', lat: 6.7802, lng: 79.8825 },
+      { name: 'Negombo', lat: 7.2083, lng: 79.8358 },
+      { name: 'Nittambuwa', lat: 7.1449, lng: 80.0940 },
+      { name: 'Nuwara Eliya', lat: 6.9497, lng: 80.7891 },
+      { name: 'Piliyandala', lat: 6.8013, lng: 79.9261 },
+      { name: 'Trincomalee', lat: 8.5874, lng: 81.2152 },
+      { name: 'Wattala', lat: 6.9907, lng: 79.8913 },
+      { name: 'Wennappuwa', lat: 7.3192, lng: 79.8616 },
+    ];
+
+    // Use Leaflet default pin, but declare explicitly for tooltip anchor control
+    const markerIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [0, -32],
+      tooltipAnchor: [12, -28],
+      shadowSize: [41, 41]
+    });
+
+    // Add markers with hover tooltips and click popups
+    locations.forEach((loc) => {
+      const marker = L.marker([loc.lat, loc.lng], {
+        icon: markerIcon,
+        title: loc.name,
+        riseOnHover: true
+      }).addTo(map);
+
+      marker.bindTooltip(loc.name, {
+        direction: 'top',
+        offset: [0, -8],
+        opacity: 0.9
+      });
+
+      marker.bindPopup(`<strong>${loc.name}</strong>`);
+    });
+
+    // Fit the initial view to show all markers while staying within bounds
+    const group = L.featureGroup(locations.map(l => L.marker([l.lat, l.lng])));
+    const groupBounds = group.getBounds();
+    if (groupBounds.isValid()) {
+      const bounds = groupBounds.pad(0.25);
+      const clamped = bounds.intersection(sriLankaBounds.pad(0.05)) || bounds;
+      map.fitBounds(clamped, { animate: false });
+    }
+  </script>
+</body>
+</html>
