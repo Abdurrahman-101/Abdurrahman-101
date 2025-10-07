@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sri Lanka Exam Locations Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #f7f7f7;
+      color: #1f2937;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .page {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      gap: 12px;
+    }
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 700;
+    }
+    #map {
+      width: 100%;
+      height: 70vh;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+    .leaflet-tooltip {
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.25;
+      color: #111827; /* readable text color */
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+      text-shadow: none; /* ensure fill, not outline */
+      -webkit-text-stroke: 0; /* disable any stroke */
+      padding: 6px 8px;
+    }
+    footer {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Sri Lanka Exam Locations</h1>
+    </header>
+
+    <div id="map" aria-label="Map of Sri Lanka with exam locations"></div>
+
+    <!-- Tailwind-based list of exam locations -->
+    <div class="max-w-4xl mx-auto mt-4 p-6 bg-white rounded-xl shadow-lg border border-gray-200 w-full">
+      <h2 class="text-xl font-semibold text-gray-700 mb-3">List of Exam Locations</h2>
+      <div id="location-list" class="flex flex-wrap gap-x-3 gap-y-2 text-sm text-gray-600 select-none">
+        <!-- Filled by JavaScript -->
+      </div>
+    </div>
+
+    <footer>
+      Hover a pin to see the location name. Click to pin/unpin popup.
+    </footer>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    // Center roughly on Sri Lanka
+    const map = L.map('map', { scrollWheelZoom: true }).setView([7.8731, 80.7718], 7);
+
+    // OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Keep map within Sri Lanka bounds (with a small padding)
+    const sriLankaBounds = L.latLngBounds([5.8, 79.5], [9.9, 82.1]);
+    map.setMaxBounds(sriLankaBounds.pad(0.1));
+
+    // Exam locations (names and coordinates)
+    const locations = [
+      { name: 'Ambalangoda', lat: 6.2358, lng: 80.0531 },
+      { name: 'Anuradhapura', lat: 8.3114, lng: 80.4037 },
+      { name: 'Badulla', lat: 6.9934, lng: 81.0550 },
+      { name: 'Bandaragama', lat: 6.7129, lng: 79.9893 },
+      { name: 'Bandarawela', lat: 6.8297, lng: 80.9982 },
+      { name: 'Colombo', lat: 6.9271, lng: 79.8612 },
+      { name: 'Galle', lat: 6.0535, lng: 80.2200 },
+      { name: 'Gampaha', lat: 7.0882, lng: 79.9958 },
+      { name: 'Horana', lat: 6.7189, lng: 80.0620 },
+      { name: 'Kandy', lat: 7.2906, lng: 80.6337 },
+      { name: 'Kegalle', lat: 7.2523, lng: 80.3450 },
+      { name: 'Kiribathgoda', lat: 6.9780, lng: 79.9220 },
+      { name: 'Kuliyapitiya', lat: 7.4675, lng: 80.0447 },
+      { name: 'Kurunegala', lat: 7.4863, lng: 80.3623 },
+      { name: 'Matara', lat: 5.9549, lng: 80.5549 },
+      { name: 'Moratuwa', lat: 6.7802, lng: 79.8825 },
+      { name: 'Negombo', lat: 7.2083, lng: 79.8358 },
+      { name: 'Nittambuwa', lat: 7.1449, lng: 80.0940 },
+      { name: 'Nuwara Eliya', lat: 6.9497, lng: 80.7891 },
+      { name: 'Piliyandala', lat: 6.8013, lng: 79.9261 },
+      { name: 'Trincomalee', lat: 8.5874, lng: 81.2152 },
+      { name: 'Wattala', lat: 6.9907, lng: 79.8913 },
+      { name: 'Wennappuwa', lat: 7.3192, lng: 79.8616 },
+    ];
+
+    // Use Leaflet default pin, but declare explicitly for tooltip anchor control
+    const markerIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [0, -32],
+      tooltipAnchor: [12, -28],
+      shadowSize: [41, 41]
+    });
+
+    // Add markers with hover tooltips and click popups; keep references
+    const nameToMarker = new Map();
+    locations.forEach((loc) => {
+      const marker = L.marker([loc.lat, loc.lng], {
+        icon: markerIcon,
+        title: loc.name,
+        riseOnHover: true
+      }).addTo(map);
+
+      marker.bindTooltip(loc.name, {
+        direction: 'top',
+        offset: [0, -8],
+        opacity: 1.0, // solid, readable text
+        sticky: false
+      });
+
+      marker.bindPopup(`<strong>${loc.name}</strong>`);
+      nameToMarker.set(loc.name, marker);
+    });
+
+    // Fit the initial view to show all markers while staying within bounds
+    const group = L.featureGroup(Array.from(nameToMarker.values()));
+    const groupBounds = group.getBounds();
+    if (groupBounds.isValid()) {
+      const bounds = groupBounds.pad(0.25);
+      const clamped = bounds.intersection(sriLankaBounds.pad(0.05)) || bounds;
+      map.fitBounds(clamped, { animate: false });
+    }
+
+    // ---- Build interactive Tailwind list below the map ----
+    const locationList = document.getElementById('location-list');
+    const nameToListEl = new Map();
+    let selectedName = null;
+
+    function setSelected(name) {
+      // Clear previous selection styles
+      if (selectedName && nameToListEl.has(selectedName)) {
+        nameToListEl.get(selectedName).classList.remove('ring-2', 'ring-indigo-300', 'bg-indigo-50', 'text-indigo-700');
+      }
+      selectedName = name;
+      if (name && nameToListEl.has(name)) {
+        nameToListEl.get(name).classList.add('ring-2', 'ring-indigo-300', 'bg-indigo-50', 'text-indigo-700');
+      }
+    }
+
+    function renderLocationList() {
+      const sorted = locations.slice().sort((a, b) => a.name.localeCompare(b.name));
+      locationList.innerHTML = '';
+      nameToListEl.clear();
+
+      sorted.forEach(({ name }) => {
+        const pill = document.createElement('span');
+        pill.textContent = name;
+        pill.className = 'px-3 py-1 bg-gray-100 rounded-full hover:bg-indigo-100 transition-colors duration-150 shadow-sm cursor-pointer';
+
+        pill.addEventListener('mouseenter', () => {
+          const marker = nameToMarker.get(name);
+          if (marker) {
+            marker.openTooltip();
+          }
+          pill.classList.add('bg-indigo-50');
+        });
+        pill.addEventListener('mouseleave', () => {
+          const marker = nameToMarker.get(name);
+          if (marker && selectedName !== name) {
+            marker.closeTooltip();
+          }
+          if (selectedName !== name) {
+            pill.classList.remove('bg-indigo-50');
+          }
+        });
+        pill.addEventListener('click', () => {
+          const marker = nameToMarker.get(name);
+          if (!marker) return;
+          setSelected(name);
+          map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 10), { duration: 0.6 });
+          marker.openPopup();
+        });
+
+        nameToListEl.set(name, pill);
+        locationList.appendChild(pill);
+      });
+    }
+
+    // Keep list and markers visually linked
+    nameToMarker.forEach((marker, name) => {
+      marker.on('mouseover', () => {
+        const pill = nameToListEl.get(name);
+        if (pill) pill.classList.add('bg-indigo-50');
+      });
+      marker.on('mouseout', () => {
+        const pill = nameToListEl.get(name);
+        if (pill && selectedName !== name) pill.classList.remove('bg-indigo-50');
+      });
+      marker.on('click', () => setSelected(name));
+    });
+
+    renderLocationList();
+  </script>
+</body>
+</html>
