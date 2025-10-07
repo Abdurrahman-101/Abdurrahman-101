@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sri Lanka Exam Locations Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -16,7 +18,7 @@
       margin: 0;
       background: #f7f7f7;
       color: #1f2937;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
     .page {
       display: flex;
@@ -41,8 +43,18 @@
       background: #fff;
     }
     .leaflet-tooltip {
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 14px;
+      line-height: 1.25;
+      color: #111827; /* readable text color */
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+      text-shadow: none; /* ensure fill, not outline */
+      -webkit-text-stroke: 0; /* disable any stroke */
+      padding: 6px 8px;
     }
     footer {
       font-size: 12px;
@@ -57,6 +69,14 @@
     </header>
 
     <div id="map" aria-label="Map of Sri Lanka with exam locations"></div>
+
+    <!-- Tailwind-based list of exam locations -->
+    <div class="max-w-4xl mx-auto mt-4 p-6 bg-white rounded-xl shadow-lg border border-gray-200 w-full">
+      <h2 class="text-xl font-semibold text-gray-700 mb-3">List of Exam Locations</h2>
+      <div id="location-list" class="flex flex-wrap gap-x-3 gap-y-2 text-sm text-gray-600 select-none">
+        <!-- Filled by JavaScript -->
+      </div>
+    </div>
 
     <footer>
       Hover a pin to see the location name. Click to pin/unpin popup.
@@ -82,7 +102,7 @@
     const sriLankaBounds = L.latLngBounds([5.8, 79.5], [9.9, 82.1]);
     map.setMaxBounds(sriLankaBounds.pad(0.1));
 
-    // Exam locations
+    // Exam locations (names and coordinates)
     const locations = [
       { name: 'Ambalangoda', lat: 6.2358, lng: 80.0531 },
       { name: 'Anuradhapura', lat: 8.3114, lng: 80.4037 },
@@ -121,7 +141,8 @@
       shadowSize: [41, 41]
     });
 
-    // Add markers with hover tooltips and click popups
+    // Add markers with hover tooltips and click popups; keep references
+    const nameToMarker = new Map();
     locations.forEach((loc) => {
       const marker = L.marker([loc.lat, loc.lng], {
         icon: markerIcon,
@@ -132,20 +153,92 @@
       marker.bindTooltip(loc.name, {
         direction: 'top',
         offset: [0, -8],
-        opacity: 0.9
+        opacity: 1.0, // solid, readable text
+        sticky: false
       });
 
       marker.bindPopup(`<strong>${loc.name}</strong>`);
+      nameToMarker.set(loc.name, marker);
     });
 
     // Fit the initial view to show all markers while staying within bounds
-    const group = L.featureGroup(locations.map(l => L.marker([l.lat, l.lng])));
+    const group = L.featureGroup(Array.from(nameToMarker.values()));
     const groupBounds = group.getBounds();
     if (groupBounds.isValid()) {
       const bounds = groupBounds.pad(0.25);
       const clamped = bounds.intersection(sriLankaBounds.pad(0.05)) || bounds;
       map.fitBounds(clamped, { animate: false });
     }
+
+    // ---- Build interactive Tailwind list below the map ----
+    const locationList = document.getElementById('location-list');
+    const nameToListEl = new Map();
+    let selectedName = null;
+
+    function setSelected(name) {
+      // Clear previous selection styles
+      if (selectedName && nameToListEl.has(selectedName)) {
+        nameToListEl.get(selectedName).classList.remove('ring-2', 'ring-indigo-300', 'bg-indigo-50', 'text-indigo-700');
+      }
+      selectedName = name;
+      if (name && nameToListEl.has(name)) {
+        nameToListEl.get(name).classList.add('ring-2', 'ring-indigo-300', 'bg-indigo-50', 'text-indigo-700');
+      }
+    }
+
+    function renderLocationList() {
+      const sorted = locations.slice().sort((a, b) => a.name.localeCompare(b.name));
+      locationList.innerHTML = '';
+      nameToListEl.clear();
+
+      sorted.forEach(({ name }) => {
+        const pill = document.createElement('span');
+        pill.textContent = name;
+        pill.className = 'px-3 py-1 bg-gray-100 rounded-full hover:bg-indigo-100 transition-colors duration-150 shadow-sm cursor-pointer';
+
+        pill.addEventListener('mouseenter', () => {
+          const marker = nameToMarker.get(name);
+          if (marker) {
+            marker.openTooltip();
+          }
+          pill.classList.add('bg-indigo-50');
+        });
+        pill.addEventListener('mouseleave', () => {
+          const marker = nameToMarker.get(name);
+          if (marker && selectedName !== name) {
+            marker.closeTooltip();
+          }
+          if (selectedName !== name) {
+            pill.classList.remove('bg-indigo-50');
+          }
+        });
+        pill.addEventListener('click', () => {
+          const marker = nameToMarker.get(name);
+          if (!marker) return;
+          setSelected(name);
+          map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 10), { duration: 0.6 });
+          marker.openPopup();
+        });
+
+        nameToListEl.set(name, pill);
+        locationList.appendChild(pill);
+      });
+    }
+
+    // Keep list and markers visually linked
+    nameToMarker.forEach((marker, name) => {
+      marker.on('mouseover', () => {
+        const pill = nameToListEl.get(name);
+        if (pill) pill.classList.add('bg-indigo-50');
+      });
+      marker.on('mouseout', () => {
+        const pill = nameToListEl.get(name);
+        if (pill && selectedName !== name) pill.classList.remove('bg-indigo-50');
+      });
+      marker.on('click', () => setSelected(name));
+    });
+
+    renderLocationList();
   </script>
 </body>
 </html>
